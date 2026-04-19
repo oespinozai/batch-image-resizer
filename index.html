@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Batch Image Resizer — Resize Multiple Photos Free | No Upload</title>
+  <meta name="description" content="Resize multiple images at once, right in your browser. No upload, no signup, no watermark. Free up to 20 images." />
+  <meta name="keywords" content="bulk resize images, compress images online, resize photos online, no upload image resizer, batch image resizer, resize multiple photos" />
+  <meta property="og:title" content="Batch Image Resizer — Resize Multiple Photos Free" />
+  <meta property="og:description" content="Bulk resize or compress images in your browser. No upload, no signup, no watermark." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --surface2: #222222;
+      --border: #2e2e2e;
+      --accent: #6c63ff;
+      --accent-hover: #5a52e0;
+      --accent-dim: rgba(108,99,255,0.15);
+      --text: #f0f0f0;
+      --text-muted: #888;
+      --text-dim: #555;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* NAV */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: rgba(15,15,15,0.92);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+    }
+    .nav-logo {
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-badge {
+      font-size: 0.72rem;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(108,99,255,0.3);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    /* MAIN */
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 20px 80px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 44px;
+    }
+    .hero h1 {
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* CARD */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    /* DROP ZONE */
+    #dropzone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 56px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+      background: var(--surface);
+    }
+    #dropzone:hover, #dropzone.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+    #dropzone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .drop-icon {
+      font-size: 2.8rem;
+      margin-bottom: 14px;
+      display: block;
+    }
+    .drop-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .drop-sub {
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+    .drop-sub strong { color: var(--accent); }
+    #file-count-badge {
+      display: none;
+      margin-top: 14px;
+      font-size: 0.85rem;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* OPTIONS */
+    .options-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .mode-btn {
+      flex: 1;
+      min-width: 140px;
+      padding: 13px 16px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .mode-btn.active {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+      color: var(--text);
+    }
+    .mode-btn:hover:not(.active) {
+      border-color: #444;
+      color: var(--text);
+    }
+
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .input-group label {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      min-width: 100px;
+    }
+    .input-group input[type="number"] {
+      flex: 1;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      padding: 10px 14px;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .input-group input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+    .input-group .unit {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      min-width: 28px;
+    }
+
+    /* RESIZE BUTTON */
+    #resize-btn {
+      width: 100%;
+      padding: 15px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      margin-top: 8px;
+    }
+    #resize-btn:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+    #resize-btn:active:not(:disabled) {
+      transform: scale(0.99);
+    }
+    #resize-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    /* PROGRESS */
+    #progress-section {
+      display: none;
+      margin-bottom: 20px;
+    }
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+    }
+    #progress-label { color: var(--text); font-weight: 500; }
+    .progress-bar-bg {
+      height: 8px;
+      background: var(--surface2);
+      border-radius: 99px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    #progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #a78bfa);
+      border-radius: 99px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* RESULTS */
+    #results-section { display: none; }
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .results-title {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .results-title span { color: var(--text-muted); font-weight: 400; font-size: 0.88rem; }
+
+    #download-all-btn {
+      padding: 10px 20px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    #download-all-btn:hover { background: var(--accent-hover); }
+
+    #thumb-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px;
+    }
+
+    .thumb-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .thumb-card:hover { border-color: var(--accent); }
+    .thumb-img-wrap {
+      width: 100%;
+      aspect-ratio: 1;
+      overflow: hidden;
+      background: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .thumb-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .thumb-info {
+      padding: 10px 12px;
+    }
+    .thumb-name {
+      font-size: 0.75rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+    .thumb-sizes {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+    .thumb-sizes .arrow { color: var(--accent); }
+    .thumb-sizes .after { color: var(--success); font-weight: 500; }
+    .thumb-dl-btn {
+      display: block;
+      width: 100%;
+      padding: 6px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(108,99,255,0.3);
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.2s;
+      text-decoration: none;
+    }
+    .thumb-dl-btn:hover {
+      background: rgba(108,99,255,0.28);
+    }
+
+    /* MODAL */
+    #paywall-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(6px);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #paywall-modal.show { display: flex; }
+    .modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px 32px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      position: relative;
+    }
+    .modal-icon { font-size: 2.5rem; margin-bottom: 16px; display: block; }
+    .modal-title {
+      font-size: 1.45rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      letter-spacing: -0.3px;
+    }
+    .modal-title span { color: var(--accent); }
+    .modal-desc {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      margin-bottom: 28px;
+      line-height: 1.7;
+    }
+    .modal-price {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .modal-price span { font-size: 1rem; color: var(--text-muted); font-weight: 400; }
+    .modal-perks {
+      list-style: none;
+      text-align: left;
+      margin: 16px 0 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .modal-perks li {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-perks li::before {
+      content: "✓";
+      color: var(--success);
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .modal-buy-btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s;
+      margin-bottom: 12px;
+    }
+    .modal-buy-btn:hover { background: var(--accent-hover); }
+    .modal-close-link {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: inherit;
+      transition: color 0.2s;
+    }
+    .modal-close-link:hover { color: var(--text-muted); }
+
+    /* FEATURES */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin-top: 56px;
+    }
+    .feature-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .feature-icon { font-size: 1.5rem; margin-bottom: 10px; display: block; }
+    .feature-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 5px; }
+    .feature-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 20px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.78rem;
+    }
+    footer a { color: var(--text-muted); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+
+    /* TOAST */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: 99px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      opacity: 0;
+      transition: all 0.3s;
+      pointer-events: none;
+      z-index: 200;
+      white-space: nowrap;
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 500px) {
+      main { padding: 32px 14px 60px; }
+      .card { padding: 18px; }
+      #thumb-grid { grid-template-columns: repeat(2, 1fr); }
+      .hero h1 { font-size: 1.7rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Image<span>Resize</span></div>
+  <div class="nav-badge">100% In-Browser</div>
+</nav>
+
+<main>
+  <section class="hero">
+    <h1>Batch Image <span>Resizer</span></h1>
+    <p>Bulk resize or compress images online — no upload, no signup, no watermark. All processing stays on your device.</p>
+  </section>
+
+  <!-- DROP ZONE -->
+  <div class="card" style="padding:0;border:none;background:transparent;">
+    <div id="dropzone">
+      <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp" multiple />
+      <span class="drop-icon">🖼️</span>
+      <div class="drop-title">Drop images here or click to browse</div>
+      <div class="drop-sub">JPG, PNG, WebP — <strong>Free up to 20 images</strong> per batch</div>
+      <div id="file-count-badge">0 files selected</div>
+    </div>
+  </div>
+
+  <!-- OPTIONS -->
+  <div class="card">
+    <div class="card-title">Resize Options</div>
+
+    <div class="options-row">
+      <button class="mode-btn active" id="mode-width" onclick="setMode('width')">
+        ↔ Resize by Width
+      </button>
+      <button class="mode-btn" id="mode-size" onclick="setMode('size')">
+        ⚖ Compress to KB
+      </button>
+    </div>
+
+    <div id="opt-width" class="input-group">
+      <label>Target width</label>
+      <input type="number" id="width-val" value="1200" min="50" max="8000" />
+      <span class="unit">px</span>
+    </div>
+
+    <div id="opt-size" class="input-group" style="display:none;">
+      <label>Max file size</label>
+      <input type="number" id="size-val" value="200" min="10" max="10000" />
+      <span class="unit">KB</span>
+    </div>
+
+    <button id="resize-btn" onclick="startResize()" disabled>
+      Resize All Images →
+    </button>
+  </div>
+
+  <!-- PROGRESS -->
+  <div id="progress-section" class="card">
+    <div class="progress-header">
+      <span id="progress-label">Processing…</span>
+      <span id="progress-count">0 / 0</span>
+    </div>
+    <div class="progress-bar-bg">
+      <div id="progress-bar"></div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results-section" class="card">
+    <div class="results-header">
+      <div class="results-title">
+        Results <span id="result-summary"></span>
+      </div>
+      <button id="download-all-btn" onclick="downloadAll()">
+        ⬇ Download All as ZIP
+      </button>
+    </div>
+    <div id="thumb-grid"></div>
+  </div>
+
+  <!-- FEATURES -->
+  <section class="features-grid" aria-label="Features">
+    <div class="feature-item">
+      <span class="feature-icon">🔒</span>
+      <div class="feature-title">No Upload Required</div>
+      <div class="feature-desc">Your photos never leave your device. Zero server contact — pure client-side processing.</div>
+    </div>
+    <div class="feature-item">
+      <span class="feature-icon">⚡</span>
+      <div class="feature-title">Bulk Resize Photos</div>
+      <div class="feature-desc">Process up to 20 images at once. Resize photos online in seconds with Canvas API.</div>
+    </div>
+    <div class="feature-item">
+      <span class="feature-icon">📐</span>
+      <div class="feature-title">Two Resize Modes</div>
+      <div class="feature-desc">Resize by pixel width (aspect-ratio safe) or compress images to a target KB size.</div>
+    </div>
+    <div class="feature-item">
+      <span class="feature-icon">📦</span>
+      <div class="feature-title">ZIP Download</div>
+      <div class="feature-desc">Download all resized images in one ZIP file — or grab them individually.</div>
+    </div>
+  </section>
+</main>
+
+<!-- PAYWALL MODAL -->
+<div id="paywall-modal" role="dialog" aria-modal="true" aria-labelledby="modal-heading">
+  <div class="modal-box">
+    <span class="modal-icon">🚀</span>
+    <h2 class="modal-title" id="modal-heading">Unlock <span>Unlimited</span></h2>
+    <p class="modal-desc">You've got more than 20 images. The free tier covers up to 20 per batch. Upgrade once, resize forever.</p>
+    <div class="modal-price">$1.99 <span>one-time</span></div>
+    <ul class="modal-perks">
+      <li>Unlimited images per batch</li>
+      <li>No subscription, ever</li>
+      <li>Same fast, private, in-browser processing</li>
+      <li>Supports future features</li>
+    </ul>
+    <a href="#" class="modal-buy-btn" id="buy-btn">Buy Unlimited Access — $1.99</a>
+    <button class="modal-close-link" onclick="closeModal()">Continue with 20 images (free)</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<footer>
+  <p>No upload · No signup · No watermark · <a href="#" onclick="return false;">Privacy</a> · Built with ❤️ in the browser</p>
+  <p style="margin-top:6px;">© 2026 ImageResize · <em>No upload image resizer — resize photos online for free</em></p>
+</footer>
+
+<script>
+  // ─── CONFIG ────────────────────────────────────────────────────────────────
+  const FREE_LIMIT = 20;
+  const isPurchased = false; // set to true after Lemon Squeezy verification
+
+  // ─── STATE ─────────────────────────────────────────────────────────────────
+  let selectedFiles = [];
+  let resizedBlobs = []; // [{name, blob, origSize, newSize}]
+  let currentMode = 'width'; // 'width' | 'size'
+
+  // ─── DOM REFS ──────────────────────────────────────────────────────────────
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('file-input');
+  const fileCountBadge = document.getElementById('file-count-badge');
+  const resizeBtn = document.getElementById('resize-btn');
+  const progressSection = document.getElementById('progress-section');
+  const progressBar = document.getElementById('progress-bar');
+  const progressLabel = document.getElementById('progress-label');
+  const progressCount = document.getElementById('progress-count');
+  const resultsSection = document.getElementById('results-section');
+  const thumbGrid = document.getElementById('thumb-grid');
+  const resultSummary = document.getElementById('result-summary');
+  const paywallModal = document.getElementById('paywall-modal');
+
+  // ─── FILE SELECT ───────────────────────────────────────────────────────────
+  fileInput.addEventListener('change', e => handleFiles(Array.from(e.target.files)));
+
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    const files = Array.from(e.dataTransfer.files).filter(f => /image\/(jpeg|png|webp)/.test(f.type));
+    handleFiles(files);
+  });
+
+  function handleFiles(files) {
+    if (!files.length) return;
+    selectedFiles = files;
+    const count = files.length;
+    fileCountBadge.style.display = 'block';
+    fileCountBadge.textContent = count + ' file' + (count !== 1 ? 's' : '') + ' selected';
+    resizeBtn.disabled = false;
+    resizeBtn.textContent = 'Resize ' + count + ' Image' + (count !== 1 ? 's' : '') + ' →';
+
+    // Reset previous results
+    resultsSection.style.display = 'none';
+    thumbGrid.innerHTML = '';
+    resizedBlobs = [];
+  }
+
+  // ─── MODE TOGGLE ───────────────────────────────────────────────────────────
+  function setMode(m) {
+    currentMode = m;
+    document.getElementById('mode-width').classList.toggle('active', m === 'width');
+    document.getElementById('mode-size').classList.toggle('active', m === 'size');
+    document.getElementById('opt-width').style.display = m === 'width' ? 'flex' : 'none';
+    document.getElementById('opt-size').style.display = m === 'size' ? 'flex' : 'none';
+  }
+
+  // ─── PAYWALL ───────────────────────────────────────────────────────────────
+  function closeModal() {
+    paywallModal.classList.remove('show');
+    // trim to free limit and continue
+    selectedFiles = selectedFiles.slice(0, FREE_LIMIT);
+    processImages(selectedFiles);
+  }
+
+  // ─── START ─────────────────────────────────────────────────────────────────
+  function startResize() {
+    if (!selectedFiles.length) return;
+
+    if (!isPurchased && selectedFiles.length > FREE_LIMIT) {
+      paywallModal.classList.add('show');
+      return;
+    }
+
+    processImages(selectedFiles);
+  }
+
+  // ─── PROCESS ───────────────────────────────────────────────────────────────
+  async function processImages(files) {
+    resizedBlobs = [];
+    thumbGrid.innerHTML = '';
+    resultsSection.style.display = 'none';
+    progressSection.style.display = 'block';
+    resizeBtn.disabled = true;
+    progressBar.style.width = '0%';
+
+    const total = files.length;
+
+    for (let i = 0; i < total; i++) {
+      const file = files[i];
+      progressLabel.textContent = 'Processing: ' + truncate(file.name, 32);
+      progressCount.textContent = (i + 1) + ' / ' + total;
+      progressBar.style.width = Math.round(((i) / total) * 100) + '%';
+
+      try {
+        const result = await resizeFile(file);
+        resizedBlobs.push(result);
+        addThumb(result);
+      } catch (err) {
+        console.warn('Failed to process', file.name, err);
+      }
+
+      // Yield to browser so UI updates
+      await sleep(10);
+    }
+
+    progressBar.style.width = '100%';
+    progressLabel.textContent = 'Done!';
+    progressCount.textContent = total + ' / ' + total;
+
+    await sleep(500);
+    progressSection.style.display = 'none';
+    resultsSection.style.display = 'block';
+    resultSummary.textContent = '— ' + resizedBlobs.length + ' image' + (resizedBlobs.length !== 1 ? 's' : '') + ' ready';
+    resizeBtn.disabled = false;
+    resizeBtn.textContent = 'Resize All Images →';
+
+    showToast('✅ ' + resizedBlobs.length + ' images resized!');
+  }
+
+  // ─── RESIZE A SINGLE FILE ──────────────────────────────────────────────────
+  function resizeFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = e => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          try {
+            let blob;
+            if (currentMode === 'width') {
+              blob = resizeByWidth(img, parseInt(document.getElementById('width-val').value) || 1200);
+            } else {
+              blob = compressToKB(img, parseInt(document.getElementById('size-val').value) || 200);
+            }
+            resolve({ name: baseName(file.name) + '.jpg', blob, origSize: file.size, newSize: blob.size });
+          } catch(err) { reject(err); }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function resizeByWidth(img, targetW) {
+    const scale = Math.min(1, targetW / img.naturalWidth);
+    const w = Math.round(img.naturalWidth * scale);
+    const h = Math.round(img.naturalHeight * scale);
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    return dataURLtoBlob(canvas.toDataURL('image/jpeg', 0.88));
+  }
+
+  function compressToKB(img, targetKB) {
+    const targetBytes = targetKB * 1024;
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+
+    // Binary search for quality
+    let lo = 0.05, hi = 0.95, best = null;
+    for (let iter = 0; iter < 12; iter++) {
+      const mid = (lo + hi) / 2;
+      const dataURL = canvas.toDataURL('image/jpeg', mid);
+      const blob = dataURLtoBlob(dataURL);
+      if (blob.size <= targetBytes) {
+        best = blob;
+        lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+
+    // If even lowest quality is too big, scale down canvas
+    if (!best) {
+      let scale = 0.9;
+      while (scale > 0.1) {
+        const w = Math.round(img.naturalWidth * scale);
+        const h = Math.round(img.naturalHeight * scale);
+        const c2 = document.createElement('canvas');
+        c2.width = w; c2.height = h;
+        c2.getContext('2d').drawImage(img, 0, 0, w, h);
+        const blob = dataURLtoBlob(c2.toDataURL('image/jpeg', 0.6));
+        if (blob.size <= targetBytes) { best = blob; break; }
+        scale -= 0.1;
+      }
+    }
+
+    // Fallback: whatever we have at q=0.3
+    if (!best) {
+      best = dataURLtoBlob(canvas.toDataURL('image/jpeg', 0.3));
+    }
+
+    return best;
+  }
+
+  // ─── THUMBNAIL ─────────────────────────────────────────────────────────────
+  function addThumb(result) {
+    const url = URL.createObjectURL(result.blob);
+    const card = document.createElement('div');
+    card.className = 'thumb-card';
+    card.innerHTML = `
+      <div class="thumb-img-wrap">
+        <img src="${url}" alt="${result.name}" loading="lazy" />
+      </div>
+      <div class="thumb-info">
+        <div class="thumb-name">${result.name}</div>
+        <div class="thumb-sizes">
+          <span>${fmtSize(result.origSize)}</span>
+          <span class="arrow">→</span>
+          <span class="after">${fmtSize(result.newSize)}</span>
+        </div>
+        <a class="thumb-dl-btn" href="${url}" download="${result.name}">⬇ Download</a>
+      </div>
+    `;
+    thumbGrid.appendChild(card);
+  }
+
+  // ─── DOWNLOAD ALL ──────────────────────────────────────────────────────────
+  async function downloadAll() {
+    if (!resizedBlobs.length) return;
+    const btn = document.getElementById('download-all-btn');
+    btn.textContent = '⏳ Zipping…';
+    btn.disabled = true;
+
+    const zip = new JSZip();
+    const folder = zip.folder('resized-images');
+    for (const r of resizedBlobs) {
+      folder.file(r.name, r.blob);
+    }
+    const content = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(content);
+    a.download = 'resized-images.zip';
+    a.click();
+
+    btn.textContent = '⬇ Download All as ZIP';
+    btn.disabled = false;
+    showToast('📦 ZIP downloaded!');
+  }
+
+  // ─── HELPERS ───────────────────────────────────────────────────────────────
+  function dataURLtoBlob(dataURL) {
+    const [header, data] = dataURL.split(',');
+    const mime = header.match(/:(.*?);/)[1];
+    const binary = atob(data);
+    const arr = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+  }
+
+  function fmtSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function baseName(name) {
+    return name.replace(/\.[^/.]+$/, '');
+  }
+
+  function truncate(str, n) {
+    return str.length > n ? str.slice(0, n - 1) + '…' : str;
+  }
+
+  function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>
